@@ -13,3 +13,6 @@ clean:
 
 clean-full: clean
 	rm -rf  dist
+
+upload:
+	twine upload dist/*

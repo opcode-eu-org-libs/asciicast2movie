@@ -24,6 +24,53 @@ import moviepy.editor as mpy
 import numpy
 import io, json
 
+def render_asciicast_frames(
+		inputData, screen, stream, startFrameTime = 0, lastFrameDuration = 3
+	):
+	'''Convert asciicast frames data to moviepy video clip
+	
+	Parameters
+	----------
+	inputData
+	    asciicast data in multiple formats
+	      * list of strings ->
+	          each string is used as asciicast frame json (no header)
+	      * list of lists ->
+	          inputData[i][0] (float) is used as frame time,
+	          inputData[i][-1] (string) is used as frame content
+	          for frame i (no header)
+	screen : pyte screen object
+	    used as emulated terminal screen
+	stream : pyte stream object
+	    used as emulated terminal input stream
+	startFrameTime : float, optional
+	    asciicast start time for first frame
+	lastFrameDuration : float, optional
+	    last frame duration time in seconds
+	
+	Returns
+	-------
+	    moviepy video clip
+	'''
+	clips = []
+	last_time = startFrameTime
+	for frame in inputData:
+		# get frame info
+		if isinstance(frame, str):
+			frame = json.loads(frame)
+		# set previous frame duration
+		if last_time > 0:
+			clips[-1] = clips[-1].set_duration(frame[0]-last_time)
+		last_time = frame[0]
+		# prepare current frame image clip
+		stream.feed(frame[-1])
+		image = tty2img.tty2img(screen)
+		imageClip = mpy.ImageClip( numpy.array(image) )
+		clips.append(imageClip)
+	
+	clips[-1] = clips[-1].set_duration(lastFrameDuration)
+	return mpy.concatenate(clips, method="compose")
+
 def asciicast2video(
 		inputData,
 		width = None,
@@ -79,25 +126,7 @@ def asciicast2video(
 	stream = pyte.Stream(screen)
 	
 	# render frames
-	clips = []
-	last_time = 0
-	for frame in inputData:
-		# get frame info
-		if isinstance(frame, str):
-			frame = json.loads(frame)
-		# set previous frame duration
-		if last_time > 0:
-			clips[-1] = clips[-1].set_duration(frame[0]-last_time)
-		last_time = frame[0]
-		# prepare current frame image clip
-		stream.feed(frame[-1])
-		image = tty2img.tty2img(screen)
-		imageClip = mpy.ImageClip( numpy.array(image) )
-		clips.append(imageClip)
-	
-	clips[-1] = clips[-1].set_duration(lastFrameDuration)
-	return mpy.concatenate(clips, method="compose")
-
+	return render_asciicast_frames(inputData, screen, stream, lastFrameDuration=lastFrameDuration)
 
 def main():
 	import sys
