@@ -59,7 +59,7 @@ def render_asciicast_frames(
 		if isinstance(frame, str):
 			frame = json.loads(frame)
 		# set previous frame duration
-		if last_time > 0:
+		if len(clips) > 0:
 			clips[-1] = clips[-1].set_duration(frame[0]-last_time)
 		last_time = frame[0]
 		# prepare current frame image clip
@@ -69,7 +69,7 @@ def render_asciicast_frames(
 		clips.append(imageClip)
 	
 	clips[-1] = clips[-1].set_duration(lastFrameDuration)
-	return mpy.concatenate(clips, method="compose")
+	return mpy.concatenate_videoclips(clips)
 
 def asciicast2video(
 		inputData,
