@@ -25,7 +25,12 @@ import numpy
 import io, json
 
 def render_asciicast_frames(
-		inputData, screen, stream, startFrameTime = 0, lastFrameDuration = 3
+		inputData,
+		screen,
+		stream,
+		startFrameTime = 0,
+		lastFrameDuration = 3,
+		renderOptions = {}
 	):
 	'''Convert asciicast frames data to moviepy video clip
 	
@@ -47,6 +52,8 @@ def render_asciicast_frames(
 	    asciicast start time for first frame
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
+	renderOptions
+	    options passed to tty2img
 	
 	Returns
 	-------
@@ -64,7 +71,7 @@ def render_asciicast_frames(
 		last_time = frame[0]
 		# prepare current frame image clip
 		stream.feed(frame[-1])
-		image = tty2img.tty2img(screen)
+		image = tty2img.tty2img(screen, **renderOptions)
 		imageClip = mpy.ImageClip( numpy.array(image) )
 		clips.append(imageClip)
 	
@@ -75,7 +82,8 @@ def asciicast2video(
 		inputData,
 		width = None,
 		height = None,
-		lastFrameDuration = 3
+		lastFrameDuration = 3,
+		renderOptions = {}
 	):
 	'''Convert asciicast data to moviepy video clip
 	
@@ -101,6 +109,8 @@ def asciicast2video(
 	    (is list of string or list of lists)
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
+	renderOptions
+	    options passed to tty2img
 	
 	Returns
 	-------
@@ -126,7 +136,9 @@ def asciicast2video(
 	stream = pyte.Stream(screen)
 	
 	# render frames
-	return render_asciicast_frames(inputData, screen, stream, lastFrameDuration=lastFrameDuration)
+	return render_asciicast_frames(
+		inputData, screen, stream, lastFrameDuration=lastFrameDuration, renderOptions=renderOptions
+	)
 
 def main():
 	import sys
@@ -135,7 +147,7 @@ def main():
 		print("USAGE: " + sys.argv[0] + " asciicast_file output_video_file")
 		sys.exit(1)
 	
-	video = asciicast2video(sys.argv[1])
+	video = asciicast2video(sys.argv[1], renderOptions={'fontSize':19})
 	video.write_videofile(sys.argv[2], fps=24)
 
 if __name__ == "__main__":
