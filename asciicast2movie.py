@@ -52,7 +52,7 @@ def render_asciicast_frames(
 	    asciicast start time for first frame
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
-	renderOptions
+	renderOptions : dict, optional
 	    options passed to tty2img
 	
 	Returns
@@ -109,7 +109,7 @@ def asciicast2video(
 	    (is list of string or list of lists)
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
-	renderOptions
+	renderOptions : dict, optional
 	    options passed to tty2img
 	
 	Returns
