@@ -25,7 +25,8 @@ def tty2img(
 		fontSize     = 17,
 		lineSpace    = 0,
 		marginSize   = 5,
-		antialiasing = 0
+		antialiasing = 0,
+		showCursor   = False
 	):
 	'''Render pyte screen as PIL image
 	
@@ -57,6 +58,9 @@ def tty2img(
 	antialiasing : int, optional
 	    antialiasing level, when greater than 1 rendered image
 	    will be antialiasing times greater ans scale down
+	showCursor
+	    when true (and screen.cursor.hidden is false) mark cursor position
+	    by reverse foreground background color on it
 	
 	Returns
 	-------
@@ -85,8 +89,12 @@ def tty2img(
 	image = Image.new('RGBA', (imgWidth, imgHeight), bgDefaultColor)
 	draw = ImageDraw.Draw(image)
 	
+	# cursor settings
+	showCursor = showCursor and (not screen.cursor.hidden)
+	
 	# draw full screen to image
 	for line in screen.buffer:
+		# process all characters in line
 		for char in screen.buffer[line]:
 			cData = screen.buffer[line][char]
 			point = (char*charWidth + marginSize, line*charHeight + marginSize)
@@ -96,6 +104,9 @@ def tty2img(
 			fgColor = cData.fg if cData.fg != 'default' else fgDefaultColor
 			
 			if cData.reverse:
+				bgColor, fgColor = fgColor, bgColor
+			
+			if showCursor and line == screen.cursor.y and char == screen.cursor.x:
 				bgColor, fgColor = fgColor, bgColor
 			
 			if bgColor != bgDefaultColor:
@@ -120,6 +131,11 @@ def tty2img(
 			
 			# draw text
 			draw.text(point, cData.data, fill=fgColor, font=font)
+		
+		# draw cursor when it is out of text range
+		if showCursor and line == screen.cursor.y and (not screen.cursor.x in screen.buffer[line]):
+			point = (screen.cursor.x*charWidth + marginSize, line*charHeight + marginSize)
+			draw.rectangle((point, (point[0] + charWidth, point[1] + charHeight)), fill=fgDefaultColor)
 	
 	# return image
 	if antialiasing > 1:

@@ -28,7 +28,7 @@ def render_asciicast_frames(
 		inputData,
 		screen,
 		stream,
-		startFrameTime = 0,
+		blinkingCursor = None,
 		lastFrameDuration = 3,
 		renderOptions = {}
 	):
@@ -36,20 +36,17 @@ def render_asciicast_frames(
 	
 	Parameters
 	----------
-	inputData
-	    asciicast data in multiple formats
-	      * list of strings ->
-	          each string is used as asciicast frame json (no header)
-	      * list of lists ->
-	          inputData[i][0] (float) is used as frame time,
-	          inputData[i][-1] (string) is used as frame content
-	          for frame i (no header)
+	inputData : list of lists
+	    asciicast data:
+	        inputData[i][0] (float) is used as frame time,
+	        inputData[i][-1] (string) is used as frame content
+	        for frame i (no header)
 	screen : pyte screen object
 	    used as emulated terminal screen
 	stream : pyte stream object
 	    used as emulated terminal input stream
-	startFrameTime : float, optional
-	    asciicast start time for first frame
+	blinkingCursor : float, optional
+	    when set show blinking cursor with period = 2 * this value
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
 	renderOptions : dict, optional
@@ -60,28 +57,41 @@ def render_asciicast_frames(
 	    moviepy video clip
 	'''
 	clips = []
-	last_time = startFrameTime
-	for frame in inputData:
-		# get frame info
-		if isinstance(frame, str):
-			frame = json.loads(frame)
-		# set previous frame duration
-		if len(clips) > 0:
-			clips[-1] = clips[-1].set_duration(frame[0]-last_time)
-		last_time = frame[0]
-		# prepare current frame image clip
+	nextFrameStartTimes = list( zip(*inputData[1:], [ inputData[-1][0] + lastFrameDuration ]) )[0]
+	for frame, endTime in zip(inputData, nextFrameStartTimes):
+		startTime = frame[0]
+		cursorOptions, cursor = {}, 0
+		
+		# prepare current frame image clips
 		stream.feed(frame[-1])
-		image = tty2img.tty2img(screen, **renderOptions)
-		imageClip = mpy.ImageClip( numpy.array(image) )
-		clips.append(imageClip)
+		while startTime < endTime:
+			# blinking cursor support
+			if blinkingCursor and (not screen.cursor.hidden):
+				if cursor == 0:
+					duration  = blinkingCursor/2
+				else:
+					duration  = blinkingCursor
+				startTime += duration
+				if cursor%2 == 0:
+					cursorOptions = {'showCursor': True}
+				else:
+					cursorOptions = {'showCursor': False}
+				cursor += 1
+			else:
+				duration  = endTime-startTime
+				startTime = endTime
+			# subframe rendering
+			image = tty2img.tty2img(screen, **renderOptions, **cursorOptions)
+			imageClip = mpy.ImageClip( numpy.array(image) ).set_duration( duration )
+			clips.append(imageClip)
 	
-	clips[-1] = clips[-1].set_duration(lastFrameDuration)
 	return mpy.concatenate_videoclips(clips)
 
 def asciicast2video(
 		inputData,
 		width = None,
 		height = None,
+		blinkingCursor = None,
 		lastFrameDuration = 3,
 		renderOptions = {}
 	):
@@ -107,6 +117,8 @@ def asciicast2video(
 	    when set used instead of values from asciicast header
 	    must be set when inputData don't contain header
 	    (is list of string or list of lists)
+	blinkingCursor : float, optional
+	    when set show blinking cursor with period = 2 * this value
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
 	renderOptions : dict, optional
@@ -135,9 +147,16 @@ def asciicast2video(
 	screen = pyte.Screen(width, height)
 	stream = pyte.Stream(screen)
 	
+	# convert input to list of list
+	inputFrames = []
+	for frame in inputData:
+		if isinstance(frame, str):
+			frame = json.loads(frame)
+		inputFrames.append( (frame[0], frame[-1]) )
+	
 	# render frames
 	return render_asciicast_frames(
-		inputData, screen, stream, lastFrameDuration=lastFrameDuration, renderOptions=renderOptions
+		inputFrames, screen, stream, blinkingCursor, lastFrameDuration, renderOptions
 	)
 
 def main():
@@ -147,7 +166,7 @@ def main():
 		print("USAGE: " + sys.argv[0] + " asciicast_file output_video_file")
 		sys.exit(1)
 	
-	video = asciicast2video(sys.argv[1], renderOptions={'fontSize':19})
+	video = asciicast2video(sys.argv[1], blinkingCursor=0.5, renderOptions={'fontSize':19})
 	video.write_videofile(sys.argv[2], fps=24)
 
 if __name__ == "__main__":
