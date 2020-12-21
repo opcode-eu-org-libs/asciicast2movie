@@ -71,7 +71,10 @@ def render_asciicast_frames(
 					duration  = blinkingCursor/2
 				else:
 					duration  = blinkingCursor
-				startTime += duration
+				nextTime = startTime + duration
+				if nextTime > endTime:
+					duration = endTime - startTime
+				startTime = nextTime
 				if cursor%2 == 0:
 					cursorOptions = {'showCursor': True}
 				else:
@@ -166,7 +169,7 @@ def main():
 		print("USAGE: " + sys.argv[0] + " asciicast_file output_video_file")
 		sys.exit(1)
 	
-	video = asciicast2video(sys.argv[1], blinkingCursor=0.5, renderOptions={'fontSize':19})
+	video = asciicast2video(sys.argv[1], blinkingCursor=0.5, renderOptions={'fontSize':12})
 	video.write_videofile(sys.argv[2], fps=24)
 
 if __name__ == "__main__":
