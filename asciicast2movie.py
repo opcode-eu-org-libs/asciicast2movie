@@ -22,7 +22,7 @@ import pyte
 import tty2img
 import moviepy.editor as mpy
 import numpy
-import io, json
+import io, json, math
 
 def render_asciicast_frames(
 		inputData,
@@ -96,7 +96,8 @@ def asciicast2video(
 		height = None,
 		blinkingCursor = None,
 		lastFrameDuration = 3,
-		renderOptions = {}
+		renderOptions = {},
+		continueOnLowMem = False
 	):
 	'''Convert asciicast data to moviepy video clip
 	
@@ -121,11 +122,15 @@ def asciicast2video(
 	    must be set when inputData don't contain header
 	    (is list of string or list of lists)
 	blinkingCursor : float, optional
-	    when set show blinking cursor with period = 2 * this value
+	    when set show blinking cursor with period = 1.5 * this value
 	lastFrameDuration : float, optional
 	    last frame duration time in seconds
 	renderOptions : dict, optional
 	    options passed to tty2img
+	continueOnLowMem : bool or None, optional
+		when False exit on low memory warring
+		when True  ignore low memory warring and continue rendering
+		when None  interactive ask
 	
 	Returns
 	-------
@@ -157,6 +162,37 @@ def asciicast2video(
 			frame = json.loads(frame)
 		inputFrames.append( (frame[0], frame[-1]) )
 	
+	# calculate memory needs
+	frameSize = tty2img.tty2img(screen, **renderOptions).size
+	frameSize = frameSize[0] * frameSize[1] * 4
+	frameCount = len(inputFrames)
+	if blinkingCursor:
+		frameCount += math.ceil( (inputFrames[-1][0] - inputFrames[0][0]) / (1.5 * blinkingCursor) )
+	needMem = frameSize * frameCount * 3 / 1024
+	print("Rendering this file needs about " + str(int(needMem/1024)) + "MB of memory." )
+	
+	# check available memory (linux only)
+	try:
+		meminfo = open("/proc/meminfo")
+		for x in meminfo:
+			x = x.split(":", 1)
+			if x[0] == "MemAvailable":
+				freeMem = int(x[1].strip().split(" ")[0])
+				print("Available memory: " + str(int(freeMem/1024)) + "MB\n")
+				if needMem > 0.9 * freeMem:
+					print("Warning processing need more than 90% of available memory.")
+					print("This may result in system instability or bad performance.")
+					x = continueOnLowMem
+					while True:
+						if x in ["", "n", "N", False]:
+							exit()
+						elif x in ["y", "Y", True]:
+							break
+						x = input("Do you want continue? (y/N) ")
+				break
+	except FileNotFoundError:
+		pass
+	
 	# render frames
 	return render_asciicast_frames(
 		inputFrames, screen, stream, blinkingCursor, lastFrameDuration, renderOptions
@@ -169,7 +205,7 @@ def main():
 		print("USAGE: " + sys.argv[0] + " asciicast_file output_video_file")
 		sys.exit(1)
 	
-	video = asciicast2video(sys.argv[1], blinkingCursor=0.5, renderOptions={'fontSize':12})
+	video = asciicast2video(sys.argv[1], blinkingCursor=0.5, renderOptions={'fontSize':12}, continueOnLowMem=None)
 	video.write_videofile(sys.argv[2], fps=24)
 
 if __name__ == "__main__":
