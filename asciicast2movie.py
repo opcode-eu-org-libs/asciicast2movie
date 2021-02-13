@@ -80,6 +80,9 @@ def render_asciicast_frames(
 				else:
 					cursorOptions = {'showCursor': False}
 				cursor += 1
+				if startTime > endTime:
+					duration -= startTime-endTime
+					startTime = endTime
 			else:
 				duration  = endTime-startTime
 				startTime = endTime
