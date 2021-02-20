@@ -67,22 +67,23 @@ def render_asciicast_frames(
 		while startTime < endTime:
 			# blinking cursor support
 			if blinkingCursor and (not screen.cursor.hidden):
+				# calculate frame duration
 				if cursor == 0:
 					duration  = blinkingCursor/2
 				else:
 					duration  = blinkingCursor
 				nextTime = startTime + duration
+				# check for too long frame and fix it
 				if nextTime > endTime:
 					duration = endTime - startTime
+					nextTime = endTime
 				startTime = nextTime
+				# switch cursor
 				if cursor%2 == 0:
 					cursorOptions = {'showCursor': True}
 				else:
 					cursorOptions = {'showCursor': False}
 				cursor += 1
-				if startTime > endTime:
-					duration -= startTime-endTime
-					startTime = endTime
 			else:
 				duration  = endTime-startTime
 				startTime = endTime

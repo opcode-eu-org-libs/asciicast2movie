@@ -4,7 +4,7 @@ import asciicast2movie
 setuptools.setup(
     name="asciicast2movie",
     py_modules=["asciicast2movie"],
-    version="0.3.3",
+    version="0.3.4",
     author="Robert Paciorek",
     author_email="robert@opcode.eu.org",
     description="generate movie (video clip) from asciicast",
