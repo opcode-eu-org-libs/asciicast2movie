@@ -11,7 +11,7 @@ Requires:
 Copyright © 2020, Robert Ryszard Paciorek <rrp@opcode.eu.org>, MIT licence
 '''
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageColor
 import pyte
 
 def tty2img(
@@ -109,6 +109,9 @@ def tty2img(
 			if showCursor and line == screen.cursor.y and char == screen.cursor.x:
 				bgColor, fgColor = fgColor, bgColor
 			
+			bgColor = _convertColor(bgColor)
+			fgColor = _convertColor(fgColor)
+			
 			if bgColor != bgDefaultColor:
 				draw.rectangle((point, (point[0] + charWidth, point[1] + charHeight)), fill=bgColor)
 			
@@ -142,3 +145,8 @@ def tty2img(
 		return image.resize((imgWidth//antialiasing, imgHeight//antialiasing), Image.ANTIALIAS)
 	else:
 		return image
+
+def _convertColor(color):
+	if color[0] != "#" and not color in ImageColor.colormap:
+		return "#" + color
+	return color
