@@ -60,10 +60,11 @@ def render_asciicast_frames(
 	nextFrameStartTimes = list( zip(*inputData[1:], [ inputData[-1][0] + lastFrameDuration ]) )[0]
 	for frame, endTime in zip(inputData, nextFrameStartTimes):
 		startTime = frame[0]
-		cursorOptions, cursor = {}, 0
+		cursor = 0
 		
 		# prepare current frame image clips
 		stream.feed(frame[-1])
+		imageClip, imageCursorOn, imageCursorOff = None, None, None
 		while startTime < endTime:
 			# blinking cursor support
 			if blinkingCursor and (not screen.cursor.hidden):
@@ -80,17 +81,22 @@ def render_asciicast_frames(
 				startTime = nextTime
 				# switch cursor
 				if cursor%2 == 0:
-					cursorOptions = {'showCursor': True}
+					if imageCursorOn == None:
+						imageCursorOn = tty2img.tty2img(screen, showCursor=True, **renderOptions)
+						imageCursorOn = mpy.ImageClip(numpy.array( imageCursorOn ))
+					imageClip = imageCursorOn
 				else:
-					cursorOptions = {'showCursor': False}
+					if imageCursorOff == None:
+						imageCursorOff = tty2img.tty2img(screen, showCursor=False, **renderOptions)
+						imageCursorOff = mpy.ImageClip(numpy.array( imageCursorOff ))
+					imageClip = imageCursorOff
 				cursor += 1
 			else:
+				imageClip = mpy.ImageClip(numpy.array( tty2img.tty2img(screen, **renderOptions) ))
 				duration  = endTime-startTime
 				startTime = endTime
 			# subframe rendering
-			image = tty2img.tty2img(screen, **renderOptions, **cursorOptions)
-			imageClip = mpy.ImageClip( numpy.array(image) ).set_duration( duration )
-			clips.append(imageClip)
+			clips.append( imageClip.set_duration(duration) )
 	
 	return mpy.concatenate_videoclips(clips)
 
