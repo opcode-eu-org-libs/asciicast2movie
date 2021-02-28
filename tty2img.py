@@ -19,8 +19,9 @@ import pyte
 
 try:
   import fclist
+  import freetype
 except ModuleNotFoundError:
-  fclist = None
+  freetype = None
 
 def tty2img(
 		screen,
@@ -90,14 +91,20 @@ def tty2img(
 		fontSize     = fontSize * antialiasing
 	
 	# font settings
-	normalFont      = ImageFont.truetype(fontName, fontSize)
-	boldFont        = ImageFont.truetype(boldFontName, fontSize)
-	italicsFont     = ImageFont.truetype(italicsFontName, fontSize)
-	boldItalicsFont = ImageFont.truetype(boldItalicsFontName, fontSize)
+	normalFont      = [ ImageFont.truetype(fontName, fontSize), None ]
+	boldFont        = [ ImageFont.truetype(boldFontName, fontSize), None ]
+	italicsFont     = [ ImageFont.truetype(italicsFontName, fontSize), None ]
+	boldItalicsFont = [ ImageFont.truetype(boldItalicsFontName, fontSize), None ]
+	
+	if freetype:
+		normalFont[1]      = freetype.Face(normalFont[0].path)
+		boldFont[1]        = freetype.Face(boldFont[0].path)
+		italicsFont[1]     = freetype.Face(italicsFont[0].path)
+		boldItalicsFont[1] = freetype.Face(boldItalicsFont[0].path)
 	
 	# calculate single char and image size
-	charWidth, _ = normalFont.getsize('X')
-	charHeight   = sum(normalFont.getmetrics()) + lineSpace
+	charWidth, _ = normalFont[0].getsize('X')
+	charHeight   = sum(normalFont[0].getmetrics()) + lineSpace
 	imgWidth     = charWidth  * screen.columns + 2*marginSize
 	imgHeight    = charHeight * screen.lines + 2*marginSize
 	
@@ -150,13 +157,13 @@ def tty2img(
 			
 			# does font have this char?
 			extraWidth = 0
-			if fclist and not list(fclist.fclist(file=font.path, charset=hex(ord(cData.data)))):
+			if freetype and not font[1].get_char_index(cData.data):
 				foundFont = False
 				for fname in fallbackFonts:
 					for ff in fclist.fclist(family=fname, charset=hex(ord(cData.data))):
 						foundFont = True
-						font = ImageFont.truetype(ff.file, fontSize)
-						extraWidth = max(0, font.getsize(cData.data)[0] - charWidth)
+						font = [ ImageFont.truetype(ff.file, fontSize), None ]
+						extraWidth = max(0, font[0].getsize(cData.data)[0] - charWidth)
 						break
 					if foundFont:
 						break
@@ -172,7 +179,7 @@ def tty2img(
 				draw.line(((point[0], point[1] + charHeight//2), (point[0] + charWidth, point[1] + charHeight//2)), fill=fgColor)
 			
 			# draw text
-			draw.text(point, cData.data, fill=fgColor, font=font)
+			draw.text(point, cData.data, fill=fgColor, font=font[0])
 			
 			# update next char position
 			point[0] += extraWidth
