@@ -7,12 +7,20 @@ Should be imported as a module and contains functions:
 Requires:
   * PIL (https://pypi.org/project/Pillow/) image library
   * pyte (https://pypi.org/project/pyte/) VTXXX terminal emulator
+  * fclist (https://pypi.org/project/fclist-cffi/) fontconfig wrapper
+    (optional, for support fallback fonts)
 
-Copyright © 2020, Robert Ryszard Paciorek <rrp@opcode.eu.org>, MIT licence
+Copyright © 2020-2021, Robert Ryszard Paciorek <rrp@opcode.eu.org>,
+                       MIT licence
 '''
 
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 import pyte
+
+try:
+  import fclist
+except ModuleNotFoundError:
+  fclist = None
 
 def tty2img(
 		screen,
@@ -22,11 +30,13 @@ def tty2img(
 		boldFontName        = 'DejaVuSansMono-Bold.ttf',
 		italicsFontName     = 'DejaVuSansMono-Oblique.ttf',
 		boldItalicsFontName = 'DejaVuSansMono-BoldOblique.ttf',
+		fallbackFonts       = ['DroidSansFallback', 'Symbola'],
 		fontSize     = 17,
 		lineSpace    = 0,
 		marginSize   = 5,
 		antialiasing = 0,
-		showCursor   = False
+		showCursor   = False,
+		logFunction  = None
 	):
 	'''Render pyte screen as PIL image
 	
@@ -49,6 +59,9 @@ def tty2img(
 	        * bold+italics font (boldItalicsFontName)
 	    should be used monospace font from this same family
 	    (for all chars and all font variants char width should be the same)
+	fallbackFonts : list of strings
+	    fonts families to use when normal font don't have glyph for
+	    rendered character (require fclist module)
 	fontSize : int, optional
 	    font size to use
 	lineSpace : int, optional
@@ -58,9 +71,12 @@ def tty2img(
 	antialiasing : int, optional
 	    antialiasing level, when greater than 1 rendered image
 	    will be antialiasing times greater ans scale down
-	showCursor
+	showCursor : bool, optional
 	    when true (and screen.cursor.hidden is false) mark cursor position
 	    by reverse foreground background color on it
+	logFunction : function
+	    function used to print some info and warnings,
+	    e.g. set to print for printing to stdout
 	
 	Returns
 	-------
@@ -95,9 +111,16 @@ def tty2img(
 	# draw full screen to image
 	for line in screen.buffer:
 		# process all characters in line
+		point = [marginSize, line*charHeight + marginSize]
 		for char in screen.buffer[line]:
 			cData = screen.buffer[line][char]
-			point = (char*charWidth + marginSize, line*charHeight + marginSize)
+			
+			# check for empty char (bug in pyte?)
+			if cData.data == "":
+				continue
+			
+			# update char position
+			point[0] += charWidth
 			
 			# set colors and draw background
 			bgColor = cData.bg if cData.bg != 'default' else bgDefaultColor
@@ -125,6 +148,22 @@ def tty2img(
 			else:
 				font = normalFont
 			
+			# does font have this char?
+			extraWidth = 0
+			if fclist and not list(fclist.fclist(file=font.path, charset=hex(ord(cData.data)))):
+				foundFont = False
+				for fname in fallbackFonts:
+					for ff in fclist.fclist(family=fname, charset=hex(ord(cData.data))):
+						foundFont = True
+						font = ImageFont.truetype(ff.file, fontSize)
+						extraWidth = max(0, font.getsize(cData.data)[0] - charWidth)
+						break
+					if foundFont:
+						break
+				else:
+					if logFunction:
+						logFunction("Missing glyph for " + hex(ord(cData.data)) + " Unicode symbols (" + cData.data + ")")
+			
 			# draw underscore and strikethrough
 			if cData.underscore:
 				draw.line(((point[0], point[1] + charHeight-1), (point[0] + charWidth, point[1] + charHeight-1)), fill=fgColor)
@@ -134,6 +173,9 @@ def tty2img(
 			
 			# draw text
 			draw.text(point, cData.data, fill=fgColor, font=font)
+			
+			# update next char position
+			point[0] += extraWidth
 		
 		# draw cursor when it is out of text range
 		if showCursor and line == screen.cursor.y and (not screen.cursor.x in screen.buffer[line]):
