@@ -136,7 +136,7 @@ def tty2img(
 			fgColor = _convertColor(fgColor)
 			
 			if bgColor != bgDefaultColor:
-				draw.rectangle((point, (point[0] + charWidth, point[1] + charHeight)), fill=bgColor)
+				draw.rectangle( ((point[0], point[1]), (point[0] + charWidth, point[1] + charHeight)), fill=bgColor )
 			
 			# set font (bold / italics)
 			if cData.bold and cData.italics:
@@ -180,7 +180,7 @@ def tty2img(
 		# draw cursor when it is out of text range
 		if showCursor and line == screen.cursor.y and (not screen.cursor.x in screen.buffer[line]):
 			point = (screen.cursor.x*charWidth + marginSize, line*charHeight + marginSize)
-			draw.rectangle((point, (point[0] + charWidth, point[1] + charHeight)), fill=fgDefaultColor)
+			draw.rectangle( ((point[0], point[1]), (point[0] + charWidth, point[1] + charHeight)), fill=fgDefaultColor )
 	
 	# return image
 	if antialiasing > 1:
