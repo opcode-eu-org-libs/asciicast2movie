@@ -14,6 +14,10 @@ This is collection of Python packages for rendering terminal screen. It contains
 * [moviepy](https://pypi.org/project/moviepy/) video editing library
 * [numpy](https://pypi.org/project/numpy/) array computing (for moviepy)
 
+### optional (recommended):
+* [fclist-cffi](https://pypi.org/project/fclist-cffi/) fontconfig wrapper (need for support fallback fonts for missing glyphs)
+* [freetype-py](https://pypi.org/project/freetype-py/) freetype wrapper (need for support fallback fonts for missing glyphs)
+
 
 ## License
 

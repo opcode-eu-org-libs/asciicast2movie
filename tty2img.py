@@ -9,6 +9,8 @@ Requires:
   * pyte (https://pypi.org/project/pyte/) VTXXX terminal emulator
   * fclist (https://pypi.org/project/fclist-cffi/) fontconfig wrapper
     (optional, for support fallback fonts)
+  * freetype (https://pypi.org/project/freetype-py/) freetype wrapper
+    (optional, for support fallback fonts)
 
 Copyright © 2020-2021, Robert Ryszard Paciorek <rrp@opcode.eu.org>,
                        MIT licence

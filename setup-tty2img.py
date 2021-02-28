@@ -4,7 +4,7 @@ import tty2img
 setuptools.setup(
     name="tty2img",
     py_modules=["tty2img"],
-    version="0.3.2",
+    version="0.3.4",
     author="Robert Paciorek",
     author_email="robert@opcode.eu.org",
     description="rendering pyte terminal emulator screen as image",
@@ -14,7 +14,8 @@ setuptools.setup(
     install_requires=[
         'pyte',
         'pillow',
-        'fclist'
+        'fclist-cffi',
+        'freetype-py'
     ],
     license='MIT',
     url="https://bitbucket.org/OpCode-eu-org/asciicast2movie/",
