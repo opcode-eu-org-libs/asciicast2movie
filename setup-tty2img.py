@@ -4,7 +4,7 @@ import tty2img
 setuptools.setup(
     name="tty2img",
     py_modules=["tty2img"],
-    version="0.3.5",
+    version="0.3.6",
     author="Robert Paciorek",
     author_email="robert@opcode.eu.org",
     description="rendering pyte terminal emulator screen as image",

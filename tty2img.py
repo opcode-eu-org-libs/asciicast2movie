@@ -120,7 +120,7 @@ def tty2img(
 	# draw full screen to image
 	for line in screen.buffer:
 		# process all characters in line
-		point = [marginSize, line*charHeight + marginSize]
+		point, char = [marginSize, line*charHeight + marginSize], -1
 		for char in screen.buffer[line]:
 			cData = screen.buffer[line][char]
 			
