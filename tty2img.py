@@ -128,9 +128,6 @@ def tty2img(
 			if cData.data == "":
 				continue
 			
-			# update char position
-			point[0] += charWidth
-			
 			# set colors and draw background
 			bgColor = cData.bg if cData.bg != 'default' else bgDefaultColor
 			fgColor = cData.fg if cData.fg != 'default' else fgDefaultColor
@@ -184,11 +181,11 @@ def tty2img(
 			draw.text(point, cData.data, fill=fgColor, font=font[0])
 			
 			# update next char position
-			point[0] += extraWidth
+			point[0] += charWidth + extraWidth
 		
 		# draw cursor when it is out of text range
 		if showCursor and line == screen.cursor.y and (not screen.cursor.x in screen.buffer[line]):
-			point = (screen.cursor.x*charWidth + marginSize, line*charHeight + marginSize)
+			point[0] += (screen.cursor.x - char - 1) * charWidth
 			draw.rectangle( ((point[0], point[1]), (point[0] + charWidth, point[1] + charHeight)), fill=fgDefaultColor )
 	
 	# return image
