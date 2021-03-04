@@ -120,9 +120,13 @@ def tty2img(
 	# draw full screen to image
 	for line in screen.buffer:
 		# process all characters in line
-		point, char = [marginSize, line*charHeight + marginSize], -1
-		for char in screen.buffer[line]:
+		point, char, lchar = [marginSize, line*charHeight + marginSize], -1, -1
+		for char in sorted(screen.buffer[line].keys()):
 			cData = screen.buffer[line][char]
+			
+			# check for skipped chars (e.g. when use \t)
+			point[0] += charWidth * (char - lchar - 1)
+			lchar = char
 			
 			# check for empty char (bug in pyte?)
 			if cData.data == "":
