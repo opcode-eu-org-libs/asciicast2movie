@@ -105,7 +105,10 @@ def tty2img(
 		boldItalicsFont[1] = freetype.Face(boldItalicsFont[0].path)
 	
 	# calculate single char and image size
-	charWidth, _ = normalFont[0].getsize('X')
+	if hasattr(normalFont[0], 'getsize'):
+		charWidth, _ = normalFont[0].getsize('X')
+	else:
+		charWidth = normalFont[0].getbbox('X')[2]
 	charHeight   = sum(normalFont[0].getmetrics()) + lineSpace
 	imgWidth     = charWidth  * screen.columns + 2*marginSize
 	imgHeight    = charHeight * screen.lines + 2*marginSize
@@ -166,7 +169,11 @@ def tty2img(
 					for ff in fclist.fclist(family=fname, charset=hex(ord(cData.data))):
 						foundFont = True
 						font = [ ImageFont.truetype(ff.file, fontSize), None ]
-						extraWidth = max(0, font[0].getsize(cData.data)[0] - charWidth)
+						if hasattr(font[0], 'getsize'):
+							realWidth = font[0].getsize(cData.data)[0]
+						else:
+							realWidth = font[0].getbbox(cData.data)[2]
+						extraWidth = max(0, realWidth - charWidth)
 						break
 					if foundFont:
 						break
