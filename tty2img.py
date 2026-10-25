@@ -205,7 +205,21 @@ def tty2img(
 	else:
 		return image
 
+_colorMap = {
+	"default": (255, 255, 255),
+	"brightblack": (85, 85, 85),
+	"brightred": (255, 85, 85),
+	"brightgreen": (85, 255, 85),
+	"brightbrown": (255, 255, 85),
+	"brightblue": (85, 85, 255),
+	"brightmagenta": (255, 85, 255),
+	"brightcyan": (85, 255, 255),
+	"brightwhite": (255, 255, 255),
+}
+
 def _convertColor(color):
+	if color in _colorMap:
+		return _colorMap[color]
 	if color[0] != "#" and not color in ImageColor.colormap:
 		return "#" + color
 	return color
